@@ -1,0 +1,310 @@
+---
+title: "Lab 1: Hello World and Statistics: In R and Python"
+author: "Nabila Nishat Raisa"
+date: today
+format:
+  html:
+    self-contained: true
+    code-fold: true
+    code-tools: true
+  #pdf:
+    # titlepage: true
+   #toc: true
+   #toc-depth: 2asciidoc
+execute: 
+  echo: true
+editor: visual
+---
+
+# Part 1: Hello World and Beyond
+
+```{r}
+print("Hello World!")
+print ("Hello Stats")
+1+2+3+4+5
+c(1, 2, 3, 4, 5)
+1:5
+sum(1:5)
+x<-1:5
+y<-10
+x+y
+z<-(x+y)
+z
+h<- ("Hello")
+print(h)
+w<- ("World!")
+hw<-c(h,w)
+print(hw)
+paste(hw)
+ls()
+rm(z)
+ls()
+```
+
+```{r}
+baskets.of.granny<-c(12,4,4,6,9,3)
+sum(baskets.of.granny)
+```
+
+```{r}
+firstnames <- c("John", "Jacqueline", "Robert")
+lastname <- c("Kennedy")
+paste(firstnames,lastname)
+
+lastnames<- c("Kennedy", "Kennedy Onassis")
+paste(firstnames, lastnames)
+```
+
+# Part 2: Statistical Analysis with R
+
+```{r}
+library(tidyverse)
+mpg
+ggplot(data = mpg) +
+geom_point(mapping = aes(x=displ, y=hwy))
+```
+
+```{r}
+ggplot(data = mpg, mapping = aes(x=class, y=hwy))+
+geom_boxplot()
+```
+
+```{r}
+mean(economics$unemploy)
+var(economics$unemploy)
+sd(economics$unemploy)
+cor(economics$pce, economics$psavert)
+
+#they have a negative and strong correlation
+```
+
+```{r}
+library(reshape2)
+t.test(tips$tip, alternative = "two.sided", mu=2.50)
+
+#the test results are significant at p value less than 0.05.
+
+```
+
+```{r}
+head(mpg) 
+tail(mpg)
+```
+
+```{r}
+ggplot(mpg, aes(x=displ, y=hwy))+
+geom_point()+geom_smooth()
+labs(x="Engine Size",y="Highway Fuel Efficiency")
+```
+
+```{r}
+ggplot(mpg, aes(x=hwy, y=displ))+
+geom_point()+geom_smooth()
+labs(x="Highway Fuel Efficiency",y="Engine Size")
+```
+
+```{r}
+fuelLM <- lm(displ~hwy, data = mpg)
+fuelLM
+summary(fuelLM)
+```
+
+# Part 3: Basic Importing and Wrangling of Data in R
+
+```{r}
+housing <- read.table(
+"http://www.jaredlander.com/data/housing.csv", sep = ",",
+header = TRUE, stringsAsFactors = FALSE)
+```
+
+```{r}
+head(housing)
+```
+
+```{r}
+names(housing) <- c("Neighborhood", "Class", "Units", "YearBuilt", "SqFt",
+"Income", "IncomePer-SqFt", "Expense", "ExpensePerSqFt", "NetIncome",
+"Value", "ValuePerSqFt", "Boro")
+
+head(housing)
+
+```
+
+```{r}
+house1 <- lm(ValuePerSqFt ~ Units + SqFt + Boro, data = housing)
+summary(house1)
+```
+
+# Part 4: Hello World, Data, Statistics, and Beyond in Python
+
+```{python}
+
+print("Hello World!")
+print("Hello Stats!")
+
+1+2+3+4+5
+```
+
+```{python}
+{python}
+print("Hello World!")
+print("Hello Stats!")
+
+1+2+3+4+5
+```
+
+```{python}
+import numpy
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels.api as sm
+```
+
+```{python}
+from matplotlib import pyplot as plt
+from statsmodels.formula.api import ols
+```
+
+```{python}
+from sklearn.datasets import fetch_california_housing
+housing = fetch_california_housing()
+
+```
+
+```{python}
+X,y = housing.data, housing.target
+print("The size of the dataset is {}".format(X.shape))
+print("The names of the data columns are {}", housing.feature_names)
+
+```
+
+```{python}
+print(housing.keys())
+
+```
+
+```{python}
+from sklearn.linear_model import LinearRegression
+hypothesis = LinearRegression()
+hypothesis.fit(X,y)
+
+```
+
+```{python}
+print(hypothesis.coef_)
+
+```
+
+```{python}
+from sklearn import datasets
+iris = datasets.load_iris()
+```
+
+```{python}
+iris.keys()
+
+```
+
+```{python}
+iris['data']
+```
+
+```{python}
+iris_df = pd.DataFrame(iris_data.data, columns=iris_data.feature_names)
+iris_df['species'] = pd.Categorical.from_codes(iris.target, iris.target_names)
+print(iris_df.head())
+print(iris_df.describe())
+
+#used chatgpt as professor's code was not working
+
+```
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+
+iris_data = load_iris()
+iris_df = pd.DataFrame(iris_data.data, columns=iris_data.feature_names)
+
+# Plot histograms for each column in the dataframe
+iris_df.hist(edgecolor='black', linewidth=1.2, figsize=(12, 8))
+
+# Show the plot
+plt.show()
+
+#used chatgpt as professor's code was not working
+```
+
+```{python}
+iris_df['species'] = pd.Categorical.from_codes(iris_data.target, iris_data.target_names)
+
+sns.scatterplot(x='sepal length (cm)', y='sepal width (cm)', hue='species', data=iris_df)
+
+plt.savefig('iris_scatter.png')
+
+plt.show()
+
+#used chatgpt as professor's code was not working
+
+```
+
+```{python}
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+
+img = mpimg.imread('iris_scatter.png')
+
+plt.imshow(img)
+plt.axis('off')  
+plt.show()
+```
+
+```{python}
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+from sklearn.datasets import load_iris
+
+# Load the iris dataset
+iris_data = load_iris()
+iris_df = pd.DataFrame(iris_data.data, columns=iris_data.feature_names)
+
+# Initialize the StandardScaler
+scaler = StandardScaler()
+
+# Scale the features (excluding the species column)
+iris_scaled = scaler.fit_transform(iris_df)
+
+#used chatgpt as professor's code was not working
+
+```
+
+```{python}
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+
+```
+
+```{python}
+X_train, X_test, y_train, y_test = train_test_split(iris_scaled, iris.target,
+test_size=0.3, random_state=42)
+
+```
+
+```{python}
+model = LogisticRegression()
+model.fit(X_train, y_train)
+```
+
+```{python}
+y_pred = model.predict(X_test)
+
+```
+
+```{python}
+accuracy = accuracy_score(y_test, y_pred) 
+print(f'Accuracy: {accuracy:.2f}')
+```
