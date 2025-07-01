@@ -1,0 +1,57 @@
+---
+title: "Bonus Lab 4: Using LLMs with OpenAI and
+Hugging Face with Python"
+author: "Nabila Nishat Raisa"
+date: "2024-11-24"
+output: pdf_document
+knitr:
+  opts_chunk:
+    warning: false
+    error: false
+    message: false"
+---
+
+## Exercise 1
+
+```{python}
+import os
+import openai
+from openai import OpenAI
+os.environ['OPENAI_API_KEY'] = 'sk-proj-jhuJKy-3LF2u5lcWcEqBK
+```
+
+```{python}
+import os
+import openAI
+from openai import OpenAI
+
+```
+
+```{MtqjqNwZwlvBBQwlV62PgnWOZlHyCzAC2KoCU57GoX2W_VGN0k6xNT3BlbkFJHaLe7Wnc4HYbLXGamrguDnk0b0d2GjTUG6UmRpbBDWQKwI0i8diLua69qftlM_Ts0K8qq7tVgA'}
+
+```
+
+## Exercise 2
+
+```{python}
+client = OpenAI()
+# This is a helper function to return what we want from the GPT 3.5 Turbo llm
+def get_completion(prompt, model="gpt-3.5-turbo"):
+  messages = [{"role": "user", "content": prompt}]
+  response = client.chat.completions.create(
+    model=model,
+    messages=messages,
+    temperature=0
+)
+  return response.choices[0].message.content
+
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).

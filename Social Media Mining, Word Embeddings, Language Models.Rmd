@@ -1,0 +1,277 @@
+---
+title: 'Lab 6: Social Media Mining, Word Embeddings, Language Models, and LLMs in
+  R and Python'
+author: "Nabila Nishat Raisa"
+date: "2024-10-06"
+output: pdf_document
+warnings: false
+error: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Pre-lab
+
+```{r}
+# install.packages("RedditExtractoR")
+# install.packages("rtoot")
+# install.packages("word2vec")
+# install.packages("text2vec")
+# install.packages("keras")
+# install.packages("transformer")
+```
+
+```{r}
+library("RedditExtractoR")
+library("rtoot")
+library("word2vec")
+library("text2vec")
+library("keras")
+library("transformer")
+```
+
+# Part 1
+
+### Deliverable 1 
+
+```{r}
+setwd("C:/Users/auuser/OneDrive - american.edu/Fall 2024/ITEC 724/Lab 6")
+getwd()
+```
+
+### Deliverable 2 
+
+```{r}
+library(RedditExtractoR)
+```
+
+### Deliverable 3 
+
+```{r}
+pelosubred <- find_subreddits("peloton")
+```
+
+### Deliverable 4 
+
+```{r}
+library(rtoot)
+```
+
+### Deliverable 5 
+
+Setting up bearer token for Mastodon and responding 1 for public
+
+```{r}
+bearer_token<- auth_setup(
+  instance = "mastodon.social",  
+  type = "public", 
+  name = NULL,
+  path = NULL,
+  clipboard = FALSE,
+  verbose = TRUE,
+  browser = TRUE                 
+)
+
+```
+
+### Deliverable 6 
+
+```{r}
+# toots <- stream_timeline_hashtag(
+#   hashtag = "cats", 
+#   timeout = 60,    
+#   token = bearer_token,    
+#   file_name = "C:/Users/auuser/Documents/streamed_toots.json" 
+# )
+
+# the code was not running as my project is in onedrive and file path was not opening a connection. 
+
+
+```
+
+### Deliverable 7 
+
+```{r}
+get_instance_general(instance = "mastodon.social")
+
+```
+
+```{r}
+mastoactivity <- get_instance_activity(instance = "mastodon.social")
+mastoactivity
+```
+
+```{r}
+mastotrends <- get_instance_trends(instance = "mastodon.social")
+mastotrends
+```
+
+# Part 2
+
+### Deliverable 8 
+
+```{r}
+library(tidyverse)
+
+```
+
+```{r}
+ira_tweets <- read_csv("IRAhandle_tweets_1.csv")
+head(ira_tweets)
+tail(ira_tweets)
+class(ira_tweets)
+
+```
+
+### Deliverable 9
+
+```{r}
+ira_tweets %>%
+count(region)
+
+```
+
+### Deliverable 10
+
+```{r}
+ira_tweets %>%
+count(language)
+
+```
+
+### Deliverable 11 
+
+```{r}
+ira_tweets %>%
+count(account_type)
+```
+
+### Deliverable 12 
+
+```{r}
+ira_tweets %>%
+count(account_category)
+
+
+```
+
+# Part 3
+
+```{r}
+library(text2vec)
+library(word2vec)
+library(tokenizers)
+library(magrittr)
+
+
+```
+
+### Deliverable 13 
+
+```{r}
+data("movie_review")
+head(movie_review)
+
+```
+
+### Deliverable 14 
+
+```{r}
+tokens <- movie_review$review %>%
+tolower() %>%
+word_tokenizer()
+
+```
+
+### Deliverable 15 
+
+```{r}
+it <- itoken(tokens, progressbar = FALSE)
+vocab <- create_vocabulary(it)
+vectorizer <- vocab_vectorizer(vocab)
+tcm <- create_tcm(it, vectorizer, skip_grams_window = 5L)
+
+```
+
+### Deliverable 16 
+
+```{r}
+glove_model <- GlobalVectors$new(rank = 50, x_max = 10)
+word_vectors <- glove_model$fit_transform(tcm, n_iter = 20)
+```
+
+### Deliverable 17 
+
+```{r}
+king_vector <- word_vectors["king", , drop = FALSE]
+print(king_vector)
+```
+
+### Deliverable 18 
+
+```{r}
+cos_sim <- sim2(x = word_vectors, y = king_vector, method = "cosine", norm = "l2")
+head(sort(cos_sim[,1], decreasing = TRUE), 5)
+```
+
+# Part 4
+
+### Deliverable 19 
+
+```{r}
+library(tidytext)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(gutenbergr)
+```
+
+```{r}
+book <- gutenberg_download(158)
+```
+
+```{r}
+bigrams <- book %>%
+unnest_tokens(bigram, text, token = "ngrams", n = 2)
+
+
+```
+
+### Deliverable 20 
+
+```{r}
+bigrams_separated <- bigrams %>%
+separate(bigram, into = c("word1", "word2"), sep = " ")
+bigram_counts <- bigrams_separated %>%
+count(word1, word2, sort = TRUE)
+```
+
+### Deliverable 21 
+
+```{r}
+word1_counts <- bigrams_separated %>%
+count(word1, sort = TRUE) %>%
+rename(total = n)
+bigram_probabilities <- bigram_counts %>%
+left_join(word1_counts, by = "word1") %>%
+mutate(probability = n / total)
+
+```
+
+### Deliverable 22
+
+```{r}
+predict_next_word <- function(current_word) {
+bigram_probabilities %>%
+filter(word1 == current_word) %>%
+arrange(desc(probability)) %>%
+head(5)
+}
+```
+
+```{r}
+predict_next_word("mr")
+
+```

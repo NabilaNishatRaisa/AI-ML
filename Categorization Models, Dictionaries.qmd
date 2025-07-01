@@ -1,0 +1,711 @@
+---
+title: "Lab 5-Categorization Models, Dictionaries, and Sentiment Analysis in R and Python"
+author: "Nabila Nishat Raisa"
+format: pdf
+editor: visual
+execute: 
+  echo: true 
+---
+
+## Package installation and set up
+
+test
+
+```{r}
+1 + 1
+file.rename("Lab-5.rmarkdown", "Lab_5_rmarkdown.rmarkdown")
+
+#install.packages("rmarkdown")
+#library(rmarkdown)
+```
+
+Package installation
+
+```{r}
+#install.packages("quanteda")
+#install.packages("quanteda.textmodels")
+#install.packages("quanteda.textstats")
+#install.packages("quanteda.textplots")
+#remotes::install_github("quanteda/quanteda.sentiment")
+#remotes::install_github("quanteda/quanteda.tidy")
+#install.packages("textdata")
+#install.packages("wordcloud")
+#install.packages("readtext")
+
+```
+
+Calling libraries
+
+```{r}
+library(tm)
+library(tidyverse)
+library(tidytext)
+library(quanteda)
+library(quanteda.textmodels)
+library(quanteda.textplots)
+library(quanteda.textstats)
+library(quanteda.sentiment)
+library(quanteda.tidy)
+library(textdata)
+library(wordcloud)
+library(readtext)
+library(reshape2)
+library(janeaustenr)
+
+```
+
+```{r}
+tm::stopwords
+```
+
+# Part 1: Data Preparation, Text Mining and Dictionary Development in tm
+
+### Deliverable 1
+
+```{r}
+getwd()
+```
+
+### Deliverable 2
+
+```{r}
+reut21578 <- system.file("texts", "crude", package = "tm")
+
+reut21578
+```
+
+### Deliverable 3
+
+```{r}
+library(tm)
+reuters <- VCorpus(DirSource(reut21578,mode = "binary"), readerControl = list(reader=readReut21578XMLasPlain))
+reuters
+
+```
+
+### Deliverable 4
+
+```{r}
+reuters <- tm_map(reuters, stripWhitespace)
+
+```
+
+```{r}
+reuters <- tm_map(reuters, content_transformer(tolower))
+
+```
+
+```{r}
+reuters <- tm_map(reuters, removeWords, tm::stopwords("english"))
+
+```
+
+```{r}
+myStopwords = c(tm::stopwords(),"")
+tdm3 = TermDocumentMatrix(reuters,
+control = list(weighting = weightTfIdf,
+stopwords = myStopwords,
+removePunctuation = T,
+removeNumbers = T,
+stemming = T))
+inspect(tdm3)
+```
+
+### Deliverable 5
+
+```{r}
+dtm <- DocumentTermMatrix(reuters)
+inspect(dtm)
+
+```
+
+```{r}
+dtm2 <- DocumentTermMatrix(reuters, control = list(weighting=weightTfIdf))
+inspect(dtm2)
+```
+
+### Deliverable 6
+
+```{r}
+findFreqTerms(dtm,5)
+
+```
+
+### Deliverable 7
+
+```{r}
+findAssocs(dtm, "opec", 0.8)
+```
+
+```{r}
+findAssocs(dtm2, "opec", 0.8)
+```
+
+-   **TF** is useful if we are looking for terms that frequently co-occur with "opec" in general. This captures broad association. **TF-IDF** is more useful for finding common but contextually significant terms associated with "opec." I think both are useful depending on what we're looking for; analyzing general trends would be better with TF, while TF-IDF is useful for finding more distinctive, document-specific associations.
+
+### Deliverable 8
+
+```{r}
+inspect(removeSparseTerms(dtm, 0.4))
+```
+
+```{r}
+inspect(removeSparseTerms(dtm2, 0.4))
+
+```
+
+### Deliverable 9
+
+```{r}
+inspect(DocumentTermMatrix(reuters, list(dictionary = c("prices","crude","oil"))))
+
+```
+
+# Part 2: Understanding Tidyverse Dictionary Construction and Sentiment Analysis
+
+```{r}
+library(tidytext)
+sentiments
+head(sentiments)
+tail(sentiments)
+class(sentiments)
+```
+
+### Deliverable 10
+
+```{r}
+get_sentiments("afinn")
+get_sentiments("bing")
+get_sentiments("nrc")
+```
+
+-   **AFINN**: AFINN is a numerical-based sentiment scoring, where each word is assigned a numeric score ranging from -5 to +5. It is suitable for fine-grained sentiment analysis where we want to quantify how positive or negative a text is. For example, "abandon" gets a negative score.
+
+-   **Bing**: Bing is a binary sentiment classification. Words are categorized as either "positive" or "negative." This is suitable for simple classification of a text as "positive" or "negative". For example, "amazing" is classified as a positive word.
+
+-   **NRC**: NRC is an emotion-based sentiment classification. Words are classified into eight emotions (joy, trust, fear, surprise, sadness, anger, disgust, anticipation) as well as positive or negative sentiment. NRC is suitable for emotion-based sentiment analysis where specific emotions can be extracted from text. For example, "abandon" can associated with fear and sadness.
+
+### Deliverable 11
+
+```{r}
+library(dplyr)  
+library(magrittr) 
+library(janeaustenr)
+library(stringr)
+
+
+tidy_books <- austen_books() %>%
+group_by(book) %>%
+mutate(linenumber = row_number(),
+chapter = cumsum(str_detect(text, regex("^chapter [\\divxlc]", ignore_case = TRUE)))) %>%
+ungroup() %>%
+unnest_tokens(word, text)
+tidy_books
+
+```
+
+### Deliverable 12
+
+```{r}
+nrcjoy <- get_sentiments("nrc") %>%
+filter(sentiment == "joy")
+nrcjoy
+```
+
+### Deliverable 13
+
+```{r}
+tidy_books %>%
+filter(book == "Emma") %>%
+inner_join(nrcjoy) %>%
+count(word, sort = TRUE)
+
+```
+
+### Deliverable 14
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(tidytext)
+
+janeaustensentiment <- tidy_books %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(book, index = linenumber %/% 80, sentiment) %>%
+  spread(sentiment, n, fill = 0) %>%
+  mutate(sentiment = positive - negative)
+
+```
+
+### Deliverable 15
+
+```{r}
+str(janeaustensentiment)
+head(janeaustensentiment)
+
+```
+
+```{r}
+library(ggplot2)
+ggplot(janeaustensentiment, aes(index, sentiment, fill = book)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~book, ncol = 2, scales = "free_x") +
+  labs(title = "Sentiment Analysis of Jane Austen's Books",
+       x = "Section of the Book",
+       y = "Sentiment Score") +
+  theme_minimal()
+
+#took help from chatgpt and google for this codechunk
+```
+
+### Deliverable 16
+
+```{r}
+bing_word_counts <- tidy_books %>%
+inner_join(get_sentiments("bing")) %>%
+count(word, sentiment, sort = TRUE) %>%
+ungroup()
+bing_word_counts
+View(bing_word_counts)
+bing_word_counts %>%
+  group_by(sentiment) %>%
+top_n(10) %>%
+ungroup() %>%
+mutate(word = reorder(word,n)) %>%
+ggplot(aes(word, n, fill = sentiment)) +
+geom_col(show.legend = FALSE) +
+facet_wrap(~sentiment, scales = "free_y") +
+labs(y = "Contribution to sentiment", x = NULL) +
+coord_flip()
+```
+
+### Deliverable 17
+
+```{r}
+custom_stop_words <- bind_rows(tibble(word = c("miss"), lexicon = c("custom")), stop_words)
+custom_stop_words
+```
+
+### Deliverable 18
+
+```{r}
+bing_word_counts %>%
+anti_join(custom_stop_words) %>%
+group_by(sentiment) %>%
+top_n(10) %>%
+ungroup() %>%
+mutate(word = reorder(word, n)) %>%
+ggplot() +
+geom_col(aes(word, n, fill = sentiment), show.legend = F) +
+labs(title = "Sentiment Analysis of Jane Austen's Works",
+subtitle = "Separated by Sentiment",
+x = "",
+y = "Contribution to Sentiment") +
+theme_classic() +
+theme(plot.title = element_text(hjust = 0.5),
+plot.subtitle = element_text(hjust = 0.5)) +
+scale_fill_brewer(palette = "Set1") +
+facet_wrap(~sentiment, scales = "free") +
+coord_flip()
+```
+
+### Deliverable 19
+
+```{r}
+library(wordcloud)
+tidy_books %>%
+  anti_join(stop_words) %>%
+  count(word) %>%
+  with(wordcloud(word, n, max.words = 100))
+```
+
+```{r}
+library(reshape2)
+tidy_books %>%
+inner_join(get_sentiments("bing")) %>%
+count(word, sentiment, sort = TRUE) %>%
+acast(word ~ sentiment, value.var = "n", fill = 0) %>%
+comparison.cloud(colors = c("gray20","gray80"), max.words = 100)
+```
+
+# Part 3: Text Mining with quanteda, Including Variable Creation and Dictionaries
+
+```{r}
+global_path <- "C:/Users/auuser/OneDrive - american.edu/Fall 2024/ITEC 724/Lab 5/UN-data/"
+
+```
+
+### Deliverable 20
+
+```{r}
+file_path <- paste0(global_path, "**.txt")
+print(file_path)
+
+```
+
+```{r}
+list.files(global_path, pattern = "\\.txt$", recursive = TRUE)
+
+```
+
+```{r}
+all_files <- list.files(global_path, pattern = "\\.txt$", full.names = TRUE, recursive = TRUE)
+
+```
+
+```{r}
+library(readtext)
+UNGDspeeches <- readtext(all_files,
+  docvarsfrom = "filenames",
+  docvarnames = c("country", "session", "year"),
+  dvsep = "_",
+  encoding = "UTF-8"
+)
+
+class(UNGDspeeches)
+
+```
+
+### Deliverable 21
+
+```{r}
+library(quanteda)
+mycorpus <- corpus(UNGDspeeches)
+
+```
+
+```{r}
+docvars(mycorpus, "Textno") <-
+sprintf("%02d", 1:ndoc(mycorpus))
+mycorpus
+```
+
+```{r}
+mycorpus.stats <- summary(mycorpus)
+head(mycorpus.stats, n=10)
+
+```
+
+Australia is the country with the largest number of sentences in their speech
+
+Value for all eight variables for Australia are:
+
+```{r}
+mycorpus.stats[3, ]
+```
+
+### Deliverable 22
+
+```{r}
+token <-
+  tokens(
+    mycorpus,
+    split_hyphens = TRUE,
+    remove_numbers = TRUE,
+    remove_punct = TRUE,
+    remove_symbols = TRUE,
+    remove_url = TRUE,
+    include_docvars = TRUE
+  )
+
+```
+
+```{r}
+token_ungd <- tokens_select(
+  token,
+  c("[\\d-]", "[[:punct:]]", "^.{1,2}$"),
+  selection = "remove",
+  valuetype = "regex",
+  verbose = TRUE
+  )
+
+```
+
+### Deliverable 23
+
+```{r}
+toks_ngram <- tokens_ngrams(token, n = 2:4)
+#head(toks_ngram[[1]], 30)
+#tail(toks_ngram[[1]], 30)
+
+```
+
+### Deliverable 24
+
+```{r}
+mydfm <- dfm(token_ungd,
+tolower = TRUE,
+)
+mydfm <- dfm_remove(mydfm, pattern = stopwords("english"))
+mydfm <- dfm_wordstem(mydfm)
+
+```
+
+### Deliverable 25
+
+```{r}
+mydfm.trim <-
+  dfm_trim(
+    mydfm,
+    min_docfreq = 0.075,
+    max_docfreq = 0.90,
+    docfreq_type = "prop"
+  )
+```
+
+```{r}
+head(dfm_sort(mydfm.trim, decreasing = TRUE, margin = "both"),
+  n = 10,
+  nf = 10)
+```
+
+```{r}
+dfm_data <- data.frame(
+  country = c("CUB_34_1979.txt", "IRL_39_1984.txt", "BFA_29_1974.txt", 
+              "PAN_37_1982.txt", "GRC_43_1988.txt", "PRY_38_1983.txt"),
+  econom = c(48, 28, 21, 29, 40, 12)
+)
+
+#the country that refers most to "econom"
+most_refer_to_econom <- dfm_data[which.max(dfm_data$econom), ]
+
+print(most_refer_to_econom)
+
+```
+
+Cuba refers most to the economy in this snapshot of the data
+
+### Deliverable 26
+
+```{r}
+dict <- dictionary(file = "policy_agendas_english.lcd")
+#envdict <- dictionary(file = "Environmental Sustainability-v2.cat")
+
+```
+
+### Deliverable 27
+
+```{r}
+# Step 1: Create the DFM without grouping or applying the dictionary
+mydfm.un <- dfm(mydfm.trim)
+# Step 2: Apply the dictionary using dfm_lookup()
+mydfm.un <- dfm_lookup(mydfm.un, dictionary = dict)
+# Step 3: Group the DFM by "country" using dfm_group()
+mydfm.un <- dfm_group(mydfm.un, groups = docvars(mydfm.un, "country"))
+```
+
+### Deliverable 28
+
+```{r}
+un.topics.pa <- convert(mydfm.un, "data.frame") %>%
+  dplyr::rename(country = doc_id) %>%
+  select(country, immigration, intl_affairs, defence) %>%
+  tidyr::gather(immigration:defence, key = "Topic", value = "Share") %>%
+  group_by(country) %>%
+  mutate(Share = Share/ sum(Share)) %>%
+  mutate(Topic = haven::as_factor(Topic))
+
+```
+
+### Deliverable 29
+
+```{r}
+un.topics.pa %>%
+  ggplot(aes(country, Share, colour = Topic, fill = Topic))+
+  geom_bar(stat = "identity")+
+  scale_color_brewer(palette = "Set1")+
+  scale_fill_brewer(palette = "Pastel1")+
+  ggtitle("Distribution of PA topics in the UN General Debate corpus")+
+  xlab("")+
+  ylab("Topic share (%)")+
+  theme(axis.text.x = element_blank(),
+    axis.ticks.x = element_blank())
+```
+
+# Part 4: Using nltk and TextBlob to conduct sentiment analysis in Python
+
+### Deliverable 30
+
+```{r}
+library(reticulate)
+
+```
+
+```{python}
+# import nltk
+# custom_lexicon = {
+#    'positive': ['good', 'great', 'awesome', 'fantastic', 'terrific'],
+#     'negative': ['bad', 'terrible', 'awful', 'dreadful', 'horrible'],
+#     'neutral': ['okay', 'alright', 'fine', 'decent', 'satisfactory'],
+#     'uncertain': ['maybe', 'perhaps', 'possibly', 'probably', 'likely'],
+#     'conjunctions': ['and', 'but', 'or', 'so', 'yet'] }
+# 
+# print(custom_lexicon)
+
+```
+
+```{python}
+def preprocess_and_tokenize(text):
+  text = text.lower()
+  tokens = text.split()
+
+  return tokens
+```
+
+```{python}
+def categorize_text(text, lexicon):
+  tokens = preprocess_and_tokenize(text)
+  categories = {category: 0 for category in lexicon}
+
+  for token in tokens:
+    for category, words in lexicon.items():
+      if token in words:
+        categories[category] += 1
+  return categories
+```
+
+```{python}
+sample_texts = [
+  'The movie was good and the acting was great.',
+  'The movie was terrible and the acting was dreadful.',
+  'The movie was okay and the acting was satisfactory.',
+  'The movie was perhaps good and the acting was probably great.',
+  'The movie was fine and the acting was decent.',
+  'The movie was good but the acting was terrible.',
+  'The movie was good or the acting was bad.',
+  'The movie was good so the acting was bad.',
+  'The movie was good yet the acting was bad.'
+]
+
+#for text in sample_texts:
+ # categorize = categorize_text(text, custom_lexicon)
+  #print(categorize_text(text, custom_lexicon))
+```
+
+### Deliverable 31
+
+```{python}
+custom_lexicon ={
+  'positive': ['good', 'great', 'awesome', 'fantastic', 'terrific', 'good and', 'great and', 'terrific yet'],
+  'negative': ['bad', 'terrible', 'awful', 'dreadful', 'horrible', 'bad and', 'terrible and', 'awful and'],
+  'neutral': ['okay', 'alright', 'fine', 'decent', 'satisfactory', 'okay and', 'alright and', 'not quite sure'],
+  'uncertain': ['maybe', 'perhaps', 'possibly', 'probably', 'likely', 'maybe and', 'perhaps and', 'possibly and'],
+  'conjunctions': ['and', 'but', 'or', 'so', 'yet', 'but and', 'or and', 'so and', 'yet and', 'and or']
+}
+```
+
+### Deliverable 32
+
+```{python}
+# import nltk
+# from nltk.util import ngrams
+# 
+# def preprocess_and_tokenize(text):
+#     # Convert to lowercase
+#     text = text.lower()
+#     # Tokenize by splitting on whitespace
+#     tokens = text.split()
+#     # Generate n-grams (up to trigrams in this example)
+#     all_tokens = tokens + [' '.join(gram) for gram in ngrams(tokens, 2)] + [' '.join(gram) for gram in ngrams(tokens, 3)]
+#     return all_tokens
+# 
+# # Function to categorize text based on a custom lexicon
+# def categorize_text(text, lexicon):
+#     tokens = preprocess_and_tokenize(text)
+#     categories = {category: 0 for category in lexicon}
+# 
+#     for token in tokens:
+#         for category, phrases in lexicon.items():
+#             if token in phrases:
+#                 categories[category] += 1
+# 
+#     return categories
+
+
+```
+
+### Deliverable 33
+
+```{python}
+# import nltk
+# from nltk.sentiment.vader import SentimentIntensityAnalyzer
+# # Download VADER lexicon
+# nltk.download('vader_lexicon')
+# # Initialize VADER sentiment analyzer
+# sia = SentimentIntensityAnalyzer()
+# 
+# # Sample text
+# text = "I love this product! It's absolutely amazing :)"
+# # Get sentiment scores
+# sentiment = sia.polarity_scores(text)
+# print(sentiment)
+
+```
+
+```{python}
+# import nltk
+# from nltk.corpus import movie_reviews
+# from nltk.sentiment import SentimentIntensityAnalyzer
+#import pandas as pd
+```
+
+```{python}
+# import nltk
+# nltk.download('movie_reviews')
+# nltk.download('vader_lexicon')
+
+```
+
+```{python}
+#documents = [(list(movie_reviews.words(fileid)), category)
+#             for category in movie_reviews.categories()
+#             for fileid in movie_reviews.fileids(category)]
+```
+
+```{python}
+# reviews = pd.DataFrame(documents, columns = ['text', 'sentiment'])
+# reviews['text'] = reviews['text'].apply(lambda x: ' '.join(x))
+
+```
+
+### Deliverable 34
+
+```{python}
+# print(reviews.head())
+# print(reviews.tail())
+
+```
+
+### Deliverable 35
+
+```{python}
+# sid = SentimentIntensityAnalyzer()
+# reviews['scores'] = reviews['text'].apply(lambda review: sid.polarity_scores(review))
+# reviews['compound'] = reviews['scores'].apply(lambda score_dict: score_dict['compound'])
+# reviews['comp_score'] = reviews['compound'].apply(lambda c: 'pos' if c >=0 else 'neg')
+
+```
+
+```{python}
+# print(reviews[['text', 'sentiment', 'compound', 'comp_score']].head())
+
+```
+
+### Deliverable 36
+
+```{python}
+# import nltk
+# from textblob import TextBlob
+# nltk.download('gutenberg')
+```
+
+```{python}
+# from nltk.corpus import gutenberg
+# text = gutenberg.raw('austen-emma.txt')
+# Split into sentences
+# sentences = nltk.sent_tokenize(text)
+# Analyze sentiments of first 100 sentences
+# for sentence in sentences[:100]:
+  # blob = TextBlob(sentence)
+  # print(f"Sentence: {sentence}\nPolarity: {blob.sentiment.polarity}\n")
+```

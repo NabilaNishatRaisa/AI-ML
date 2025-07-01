@@ -1,0 +1,635 @@
+---
+title: "Lab 7: Data Visualization, Dashboards, and Collaborative Coding in R and Python"
+author: "Nabila Nishat Raisa"
+format: html
+editor: visual
+execute: 
+  echo: true 
+---
+
+## Pre Lab
+
+test
+
+```{r}
+#("rmarkdown")
+#library(rmarkdown)
+```
+
+Installing packages and calling libraries
+
+```{r}
+# install.packages(c("geojsonio", "ggmap", "highcharter", "leaflet", "plotly",
+# "Rserve", "sf","ggthemes","DT","gapminder",
+# "devtools","remotes"))
+```
+
+```{r}
+library(devtools)
+devtools::install_github("dkahle/ggmap", force = TRUE)
+```
+
+```{r}
+library(remotes)
+remotes::install_github("bokeh/rbokeh")
+remotes::install_github("martinjhnhadley/oidnChaRts")
+```
+
+### Deliverable 1
+
+```{r}
+getwd()
+```
+
+## Part 1
+
+### Deliverable 2
+
+```{r}
+library(tm)
+library(tidyverse)
+library(tidytext)
+library(devtools)
+library(geojsonio)
+library(highcharter)
+library(leaflet)
+library(plotly)
+library(Rserve)
+library(sf)
+library(ggmap)
+library(ggthemes)
+library(DT)
+library(gapminder)
+library(oidnChaRts)
+```
+
+### Deliverable 3
+
+```{r}
+data(diamonds)
+head(diamonds)
+tail(diamonds)
+
+```
+
+### Deliverable 4
+
+```{r}
+hist(diamonds$carat, main = "Carat Histogram", xlab = "Carat")
+
+```
+
+### Deliverable 5
+
+```{r}
+plot(diamonds$carat, diamonds$price)
+```
+
+### Deliverable 6
+
+```{r}
+boxplot(diamonds$carat)
+
+```
+
+### Deliverable 7
+
+```{r}
+ggplot()
+```
+
+### Deliverable 8
+
+```{r}
+ggplot(data = diamonds) +
+geom_histogram(aes(x = carat))
+
+```
+
+### Deliverable 9
+
+```{r}
+ggplot(data = diamonds) +
+geom_density(aes(x = carat),fill = "grey50")
+
+```
+
+### Deliverable 10
+
+```{r}
+ggplot(diamonds, aes(x = carat, y = price)) +
+geom_point()
+```
+
+### Deliverable 11
+
+```{r}
+g <- ggplot(diamonds, aes(x = carat, y = price))
+
+```
+
+```{r}
+g + geom_point()
+
+```
+
+```{r}
+g + geom_point(aes(color = color))
+
+```
+
+### Deliverable 12
+
+```{r}
+g + geom_point(aes(color = color)) +
+facet_wrap(~ color)
+```
+
+### Deliverable 13
+
+```{r}
+g + geom_point(aes(color = color)) +
+facet_grid(cut ~ color)
+```
+
+### Deliverable 14
+
+```{r}
+ggplot(diamonds, aes(x = carat)) +
+geom_histogram() +
+facet_wrap(~ color)
+```
+
+### Deliverable 13
+
+```{r}
+ggplot(diamonds, aes(y = carat, x = 1)) +
+geom_boxplot()
+```
+
+```{r}
+ggplot(diamonds, aes(y = carat, x = cut)) +
+geom_boxplot()
+```
+
+### Deliverable 16
+
+```{r}
+ggplot(diamonds, aes(y = carat, x = cut)) +
+geom_violin()
+
+```
+
+## Part 2
+
+### Deliverable 17
+
+```{r}
+college <- read_csv('http://672258.youcanlearnit.net/college.csv')
+summary(college)
+
+```
+
+### Deliverable 18
+
+```{r}
+college <- college %>%
+mutate(state=as.factor(state),
+region=as.factor(region),
+highest_degree=as.factor(highest_degree),
+control=as.factor(control),
+gender=as.factor(gender),
+loan_default_rate=as.numeric(loan_default_rate))
+
+```
+
+### Deliverable 19
+
+```{r}
+ggplot(data=college) +
+geom_point(mapping=aes(x=tuition, y=sat_avg))
+```
+
+### Deliverable 20
+
+```{r}
+ggplot(data=college) +
+geom_point(mapping=aes(x=tuition, y=sat_avg, shape=control))
+
+```
+
+### Deliverable 21
+
+```{r}
+ggplot(data=college) +
+geom_point(mapping=aes(x=tuition, y=sat_avg, color=control))
+```
+
+### Deliverable 22
+
+```{r}
+ggplot(data = college) +
+geom_point(mapping=aes(x=tuition, y=sat_avg, color=control, size=undergrads))
+```
+
+**Interpretation**
+
+-   **Tuition vs. SAT Average**: This scatterplot shows how tuition fees relate to the average SAT scores. We can examine if there's any correlation between higher tuition and higher SAT scores.
+
+-   **Point Colors (`control`)**: The colors of the points indicate whether the colleges are private or public. We can visually compare the difference in tuition and SAT averages between public and private institutions.
+
+-   **Point Sizes (`undergrads`)**: Larger points represent colleges with more undergraduate students, helping identify whether larger or smaller schools tend to have higher or lower tuition and SAT averages.
+
+Insights:
+
+-   Public institutions generally offer lower tuition but have varied SAT scores, while private institutions have a broader spread of tuition and SAT scores, with higher tuition often correlating with higher SAT scores.
+
+-   Larger undergraduate populations tend to be associated with public institutions and lower tuition.
+
+-   Private colleges are often smaller in student size but charge significantly higher tuition fees.
+
+### Deliverable 23
+
+```{r}
+ggplot(data = college) +
+geom_point(mapping=aes(x=tuition, y=sat_avg,
+color=control, size=undergrads), alpha=1/2)
+```
+
+### Deliverable 24
+
+```{r}
+ggplot(data = college) +
+geom_line(mapping=aes(x=tuition, y=sat_avg,
+color=control, size=undergrads), alpha=1/2)
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_smooth(mapping=aes(x=tuition, y=sat_avg,
+color=control, size=undergrads), alpha=1/2)
+
+```
+
+### Deliverable 25
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme(panel.background = element_blank()) +
+theme(plot.background = element_blank()) +
+scale_x_discrete(name="Region") +
+scale_y_continuous(name = "Number of Schools", limits = c(0,500))
+
+```
+
+### Deliverable 26
+
+```{r}
+scale_fill_manual(values = c("orange","blue"))
+
+```
+
+### Deliverable 27
+
+```{r}
+ggplot(data = college) +
+  geom_bar(mapping = aes(x = region, fill = control)) +
+  theme(panel.background = element_blank(),
+        plot.background = element_blank()) +
+  scale_x_discrete(name = "Region") +
+  scale_y_continuous(name = "Number of Schools", limits = c(0, 500)) +
+  scale_fill_manual(values = c("orange", "blue"), 
+                    guide = guide_legend(title = "Institution Type"))
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme(panel.background = element_blank()) +
+theme(plot.background = element_blank()) +
+scale_x_discrete(name="Region") +
+scale_y_continuous(name = "Number of Schools", limits = c(0,500)) +
+scale_fill_manual(values = c("orange","blue"),
+guide=guide_legend(title ="Institution
+Type", nrow=1, label.position = "bottom"))
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme(panel.background = element_blank()) +
+theme(plot.background = element_blank()) +
+scale_x_discrete(name="Region") +
+scale_y_continuous(name = "Number of Schools", limits = c(0,500)) +
+scale_fill_manual(values = c("orange","blue"),
+guide=guide_legend(title ="Institution Type", nrow=1,
+label.position = "bottom", keywidth = 2.5)) +
+theme(legend.position = "top")
+
+```
+
+### Deliverable 28
+
+```{r}
+ggplot(data = college) +
+geom_point(mapping=aes(x=tuition, y=sat_avg, color=control, size=undergrads),
+alpha=1/2) +
+annotate("text", label="Elite Privates", x=45000, y=1450) +
+geom_hline(yintercept = mean(college$sat_avg)) +
+annotate("text", label="Mean SAT", x=47500, y=mean(college$sat_avg)-15) +
+geom_vline(xintercept = mean(college$tuition)) +
+annotate("text", label="Mean Tuition", y=700, x=mean(college$tuition)+7500)
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_point(mapping=aes(x=tuition, y=sat_avg, color=control, size=undergrads),
+alpha=1/2) +
+annotate("text", label="Elite Privates", x=45000, y=1450) +
+geom_hline(yintercept = mean(college$sat_avg)) +
+annotate("text", label="Mean SAT", x=47500, y=mean(college$sat_avg)-15) +
+geom_vline(xintercept = mean(college$tuition)) +
+annotate("text", label="Mean Tuition", y=700, x=mean(college$tuition)+7500) +
+theme(panel.background = element_blank(), legend.key = element_blank())
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_point(mapping=aes(x=tuition, y=sat_avg, color=control, size=undergrads),
+alpha=1/2) +
+annotate("text", label="Elite Privates", x=45000, y=1450) +
+geom_hline(yintercept = mean(college$sat_avg)) +
+annotate("text", label="Mean SAT", x=47500, y=mean(college$sat_avg)-15) +
+geom_vline(xintercept = mean(college$tuition)) +
+annotate("text", label="Mean Tuition", y=700, x=mean(college$tuition)+7500) +
+theme(panel.background = element_blank(), legend.key = element_blank()) +
+scale_color_discrete(name="Institution Type") +
+scale_size_continuous(name="Undergraduate") +
+scale_x_continuous(name = "Tuition") +
+scale_y_continuous(name="SAT Score")
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme(panel.background = element_blank()) +
+theme(plot.background = element_blank()) +
+scale_x_discrete(name="Region") +
+scale_y_continuous(name = "Number of Schools", limits = c(0,500)) +
+scale_fill_manual(values = c("orange","blue"),
+guide=guide_legend(title ="Institution Type", nrow=1,
+label.position = "bottom", keywidth = 2.5)) +
+theme(legend.position = "bottom") +
+ggtitle("More college are in the Southern USA than any other region.",
+subtitle = "Source: U.S. Department of Education")
+```
+
+### Deliverable 29
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control))
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme_bw()
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme_minimal()
+
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme_void()
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme_dark()
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme_solarized()
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme_excel()
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme_wsj()
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme_economist()
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme_economist_white()
+
+```
+
+```{r}
+ggplot(data = college) +
+geom_bar(mapping = aes(x=region, fill=control)) +
+theme_fivethirtyeight()
+
+```
+
+## Part 4
+
+### Deliverable 30
+
+```{r}
+data_to_plot <- data_stacked_bar_chart %>%
+group_by(country_group, occupation) %>%
+summarise(total = sum(count)) %>%
+ungroup()
+
+```
+
+### Deliverable 31
+
+```{r}
+library(highcharter)
+data_to_plot %>%
+stacked_bar_chart(
+library = "highcharter",
+categories.column = ~ country_group,
+subcategories.column = ~ occupation,
+value.column = ~ total
+)
+
+```
+
+```{r}
+library(plotly)
+data_to_plot %>%
+stacked_bar_chart(library = "plotly", categories.column = ~ country_group,
+subcategories.column = ~ occupation, value.column = ~ total) %>%
+layout(margin = list(l = 150), yaxis = list(title = ""))
+```
+
+### Deliverable 32
+
+```{r}
+data_geo_marker_plot %>%
+leaflet() %>%
+addTiles() %>%
+addMarkers(label = ~city)
+
+```
+
+### Deliverable 33
+
+```{r}
+data_geo_marker_plot %>%
+leaflet() %>%
+addTiles() %>%
+addCircleMarkers(radius = ~count/8, label = ~city)
+
+```
+
+### Deliverable 34
+
+```{r}
+data_geo_marker_plot %>%
+leaflet() %>%
+addTiles() %>%
+addCircleMarkers(radius = ~count/8, label = ~city,
+clusterOptions = markerClusterOptions())
+```
+
+### Deliverable 35
+
+```{r}
+esri_shapefile <- read_sf("C:/Users/auuser/OneDrive - american.edu/Fall 2024/ITEC 724/Lab 7/world-shape-files/")
+geojson_shapefile <- read_sf("C:/Users/auuser/OneDrive - american.edu/Fall 2024/ITEC 724/Lab 7/world-geojson.json")
+shp_as_sf <- read_sf("C:/Users/auuser/OneDrive - american.edu/Fall 2024/ITEC 724/Lab 7/world-shape-files/")
+converted_geojson <- geojson_list(shp_as_sf)
+gapminder_most_recent <- gapminder %>%
+filter(year == max(year))
+highchart(type = "map") %>%
+hc_add_series_map(map = converted_geojson, df = gapminder_most_recent,
+value = "pop", joinBy = c("name_long", "country")) %>%
+hc_title(text = "Population Choropleth for 2007 (Source: Gapminder)")
+
+
+```
+
+## Part 5
+
+```{python}
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# import pandas as pd
+```
+
+```{python}
+# py_install("seaborn")
+# import seaborn as sns
+# tips = sns.load_dataset('tips')
+# print(tips.head())
+
+```
+
+```{python}
+# avg_tips = tips.groupby('day')['tip'].mean().reset_index()
+# plt.figure(figsize=(8, 6))
+# plt.bar(avg_tips['day'], avg_tips['tip'], color='skyblue')
+# plt.xlabel('Day of the Week')
+# plt.ylabel('Average Tip')
+# plt.title('Average Tip Amount by Day')
+# plt.show()
+```
+
+```{python}
+# plt.figure(figsize=(8, 6))
+# sns.boxplot(x='day', y='tip', data=tips)
+# plt.xlabel('Day of the Week')
+# plt.ylabel('Tip Amount')
+# plt.title('Distribution of Tips by Day')
+# plt.show()
+```
+
+```{python}
+# sns.set_theme(style="whitegrid")
+# plt.figure(figsize=(8, 6))
+# sns.boxplot(x='day', y='tip', data=tips, palette='pastel')
+# plt.xlabel('Day of the Week')
+# plt.ylabel('Tip Amount')
+# plt.title('Customized Distribution of Tips by Day')
+# plt.show()
+
+```
+
+```{python}
+# import nltk
+# from nltk.corpus import inaugural
+# nltk.download('inaugural')
+# nltk.download('stopwords')
+# from nltk.tokenize import word_tokenize
+# from nltk.corpus import stopwords
+# import matplotlib.pyplot as plt
+# import pandas as pd
+```
+
+```{python}
+# obama_speech = inaugural.raw('2009-Obama.txt')
+# # Now, print the first 500 characters to get a sense of the text.
+# print(obama_speech[:500])
+```
+
+```{python}
+# tokens = word_tokenize(obama_speech.lower())
+# words = [word for word in tokens if word.isalpha()]
+# stop_words = set(stopwords.words('english'))
+# words = [word for word in words if not word in stop_words]
+# print(words[:20])
+```
+
+```{python}
+# word_freq = nltk.FreqDist(words)
+# most_common_words = word_freq.most_common(10)
+# df = pd.DataFrame(most_common_words, columns=['Word', 'Frequency'])
+# plt.figure(figsize=(10, 6))
+# plt.bar(df['Word'], df['Frequency'], color='lightblue')
+# plt.xlabel('Words')
+# plt.ylabel('Frequency')
+# plt.title('Top 10 Most Frequent Words in Obama\'s 2009 Inaugural Address')
+# plt.xticks(rotation=45)
+# plt.show()
+
+```
+

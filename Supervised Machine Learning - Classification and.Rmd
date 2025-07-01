@@ -1,0 +1,457 @@
+---
+title: "Lab 10: Supervised Machine Learning - Classification and Regression Modeling
+  in R"
+author: "Nabila Nishat Raisa"
+date: "2024-11-11"
+output: pdf_document
+knitr:
+  opts_chunk:
+    warning: false
+    error: false
+    message: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
+
+
+#install.packages(c("remotes", "tidymodels", "discrim", "naivebayes", "quanteda.textmodels", "textrecipes", "workflows", "parsnip", "tune", "yardstick", "dials"))
+# library(remotes)
+# remotes::install_github("EmilHvitfeldt/scotus")
+
+library(scotus)
+library(tidymodels)
+library(naivebayes)
+library(caret)
+library(ranger)
+library(rsample)
+library(recipes)
+library(textrecipes)
+library(workflows)
+library(parsnip)
+library(discrim)
+library(tune)
+library(yardstick)
+library(dials)
+library(tidyverse)
+```
+
+```{r}
+getwd()
+```
+
+## Part 1
+
+### 1.1 Preparing the SCOTUS Data
+
+```{r}
+scotus_filtered %>%
+as_tibble()
+glimpse(scotus_filtered)
+```
+
+```{r}
+scotus_filtered %>%
+mutate(year = as.numeric(year),
+year = 10 * (year %/% 10)) %>%
+count(year) %>%
+ggplot(aes(year, n))+
+geom_col()+
+labs(x="Year", y="Number of opinions per decade")
+```
+
+### 1.2 Building a Predictive Regression Model
+
+```{r}
+set.seed(1234)
+scotus_split <- scotus_filtered %>%
+mutate(year=as.numeric(year),
+text=str_remove_all(text,"'")) %>%
+initial_split()
+scotus_train <- training(scotus_split)
+scotus_test <- testing(scotus_split)
+```
+
+### 1.3 Exploring Text Recipes and Workflows
+
+```{r}
+scotus_rec <- recipe(year ~ text, data = scotus_train) %>%
+step_tokenize(text) %>%
+step_tokenfilter(text, max_tokens = 300) %>%
+step_tfidf(text) %>%
+step_normalize(all_predictors())
+
+scotus_rec
+```
+
+```{r}
+scotus_prep <- prep(scotus_rec)
+scotus_bake <- bake(scotus_prep, new_data=NULL)
+dim(scotus_bake)
+```
+
+```{r}
+scotus_wf <- workflow() %>%
+add_recipe(scotus_rec)
+scotus_wf
+```
+
+```{r}
+svm_spec <- svm_linear() %>%
+set_mode("regression") %>%
+set_engine("LiblineaR")
+```
+
+```{r}
+svm_fit <- scotus_wf %>%
+add_model(svm_spec) %>%
+fit(data = scotus_train)
+```
+
+```{r}
+svm_fit %>%
+extract_fit_parsnip() %>%
+tidy() %>%
+arrange(-estimate)
+```
+
+### 1.4 Evaluating the Model
+
+```{r}
+test_words1 <-
+svm_fit %>%
+extract_fit_parsnip() %>%
+tidy() %>%
+slice_max(estimate, n = 10) %>%
+mutate(term = str_remove(term, "tfidf_text_")) %>%
+pull(term)
+test_words1
+```
+
+```{r}
+svm_fit %>%
+extract_fit_parsnip() %>%
+tidy() %>%
+arrange(estimate)
+test_words2 <-
+svm_fit %>%
+extract_fit_parsnip() %>%
+tidy() %>%
+slice_max(-estimate, n = 10) %>%
+mutate(term = str_remove(term, "tfidf_text_")) %>%
+  pull(term)
+test_words2
+```
+
+```{r}
+set.seed(123)
+scotus_folds <- vfold_cv(scotus_train)
+scotus_folds
+```
+
+```{r}
+set.seed(123)
+svm_rs <- fit_resamples(
+scotus_wf %>% add_model(svm_spec),
+scotus_folds,
+control = control_resamples(save_pred = TRUE)
+)
+svm_rs
+collect_metrics(svm_rs)
+```
+
+```{r}
+svm_rs %>%
+collect_predictions() %>%
+ggplot(aes(year, .pred, color = id)) +
+geom_abline(lty = 2, color = "gray80", size = 1.5) +
+geom_point(alpha = 0.3) +
+labs(
+x = "Truth",
+y = "Predicted year",
+color = NULL,
+title = "Predicted and true years for Supreme Court opinions",
+subtitle = "Each cross-validation fold is shown in a different color"
+)
+
+```
+
+```{r}
+null_regression <- null_model() %>%
+set_engine("parsnip") %>%
+set_mode("regression")
+null_rs <- fit_resamples(
+scotus_wf %>% add_model(null_regression),
+scotus_folds,
+metrics = metric_set(rmse)
+)
+null_rs
+collect_metrics(null_rs)
+
+```
+
+## Part 2
+
+### 2.1 Preparing the Complaints Data
+
+```{r}
+
+complaints <- read_csv("complaints_sample_25k.csv")
+
+```
+
+```{r}
+glimpse(complaints)
+# head(complaints$consumer_complaint_narrative)
+# tail(complaints$consumer_complaint_narrative)
+```
+
+```{r}
+complaints$consumer_complaint_narrative %>%
+str_extract_all("\\{\\$[0-9\\.]*\\}") %>%
+compact() %>%
+head()
+```
+
+### 2.2 Creating a Two-Class Model and Splitting Data
+
+```{r}
+set.seed(1234)
+complaints2class <- complaints %>%
+mutate(product = factor(if_else(
+product == paste("Credit reporting, credit repair services,",
+"or other personal consumer reports"),
+"Credit", "Other"
+)))
+
+```
+
+```{r}
+complaints_split <- initial_split(complaints2class, strata = product)
+complaints_train <- training(complaints_split)
+complaints_test <- testing(complaints_split)
+
+```
+
+```{r}
+dim(complaints_train)
+dim(complaints_test)
+```
+
+### 2.3 Creating a Complaints Recipe and Workflow
+
+```{r}
+complaints_rec <-
+recipe(product ~ consumer_complaint_narrative, data = complaints_train)
+
+```
+
+```{r}
+complaints_rec <- complaints_rec %>%
+step_tokenize(consumer_complaint_narrative) %>%
+step_tokenfilter(consumer_complaint_narrative, max_tokens = 500) %>%
+step_tfidf(consumer_complaint_narrative)
+```
+
+```{r}
+complaint_wf <- workflow() %>%
+add_recipe(complaints_rec)
+
+```
+
+```{r}
+nb_spec <- naive_Bayes() %>%
+set_mode("classification") %>%
+set_engine("naivebayes")
+nb_spec
+nb_fit <- complaint_wf %>%
+add_model(nb_spec) %>%
+fit(data = complaints_train)
+
+```
+
+```{r}
+set.seed(234)
+# Using 5-fold cross-validation instead of the default 10-fold because:
+# 1. With our reduced dataset (25k samples), 5 folds ensures more data per fold
+# 2. Fewer folds means faster computation time while still providing reliable estimates
+# 3. Each fold will have approximately 5000 samples, which is sufficient for training
+complaints_folds <- vfold_cv(complaints_train, v = 5)
+complaints_folds
+```
+
+```{r}
+nb_wf <- workflow() %>%
+add_recipe(complaints_rec) %>%
+add_model(nb_spec)
+nb_wf
+```
+
+### 2.4 Evaluating the Naive Bayes Model
+
+```{r}
+nb_rs <- fit_resamples(
+nb_wf,
+complaints_folds,
+control = control_resamples(save_pred = TRUE)
+)
+```
+
+```{r}
+nb_rs_metrics <- collect_metrics(nb_rs)
+nb_rs_predictions <- collect_predictions(nb_rs)
+nb_rs_metrics
+
+```
+
+```{r}
+nb_rs_predictions %>%
+group_by(id) %>%
+roc_curve(truth = product, .pred_Credit) %>%
+autoplot() +
+labs(
+color = NULL,
+title = "ROC curve for US Consumer Finance Complaints",
+subtitle = "Each resample fold is shown in a different color"
+)
+```
+
+```{r}
+conf_mat_resampled(nb_rs, tidy = FALSE) %>%
+autoplot(type = "heatmap")
+```
+
+```{r}
+null_classification <- null_model() %>%
+set_engine("parsnip") %>%
+set_mode("classification")
+null_rs <- workflow() %>%
+add_recipe(complaints_rec) %>%
+add_model(null_classification) %>%
+fit_resamples(
+complaints_folds
+)
+null_rs %>%
+collect_metrics()
+
+```
+
+### 2.5 Exploring a Lasso Model
+
+```{r}
+lasso_spec <- logistic_reg(penalty = 0.01, mixture = 1) %>%
+set_mode("classification") %>%
+set_engine("glmnet")
+lasso_spec
+```
+
+```{r}
+lasso_wf <- workflow() %>%
+add_recipe(complaints_rec) %>%
+add_model(lasso_spec)
+lasso_wf
+```
+
+```{r}
+set.seed(2020)
+lasso_rs <- fit_resamples(
+lasso_wf,
+complaints_folds,
+control = control_resamples(save_pred = TRUE)
+)
+
+```
+
+```{r}
+lasso_rs_metrics <- collect_metrics(lasso_rs)
+lasso_rs_predictions <- collect_predictions(lasso_rs)
+lasso_rs_metrics
+lasso_rs_predictions %>%
+group_by(id) %>%
+roc_curve(truth = product, .pred_Credit) %>%
+autoplot() +
+labs(
+color = NULL,
+title = "ROC curve for US Consumer Finance Complaints",
+subtitle = "Each resample fold is shown in a different color"
+)
+```
+
+```{r}
+conf_mat_resampled(lasso_rs, tidy = FALSE) %>%
+autoplot(type = "heatmap")
+```
+
+### 2.6 Tuning Model Hyperparameters
+
+```{r}
+tune_spec <- logistic_reg(penalty = tune(), mixture = 1) %>%
+set_mode("classification") %>%
+set_engine("glmnet")
+tune_spec
+```
+
+```{r}
+lambda_grid <- grid_regular(penalty(), levels = 15)
+lambda_grid
+```
+
+```{r}
+tune_wf <- workflow() %>%
+add_recipe(complaints_rec) %>%
+add_model(tune_spec)
+```
+
+```{r}
+set.seed(2020)
+tune_rs <- tune_grid(
+tune_wf,
+complaints_folds,
+grid = lambda_grid,
+control = control_resamples(save_pred = TRUE)
+)
+tune_rs
+```
+
+### 2.7 Evaluating the Lasso Model
+
+```{r}
+collect_metrics(tune_rs)
+autoplot(tune_rs) +
+labs(
+title = "Lasso model performance across regularization penalties",
+subtitle = "Performance metrics can be used to identity the best penalty"
+)
+```
+
+```{r}
+tune_rs %>%
+collect_metrics() %>%
+filter(.metric == "roc_auc") %>%
+arrange(desc(mean)) %>%
+slice(1) %>%
+pull(mean) %>%
+round(3)
+```
+
+```{r}
+chosen_auc <- tune_rs %>%
+select_by_one_std_err(metric = "roc_auc", -penalty)
+chosen_auc
+```
+
+```{r}
+final_lasso <- finalize_workflow(tune_wf, chosen_auc)
+final_lasso
+fitted_lasso <- fit(final_lasso, complaints_train)
+fitted_lasso %>%
+extract_fit_parsnip() %>%
+tidy() %>%
+arrange(-estimate)
+fitted_lasso %>%
+extract_fit_parsnip() %>%
+tidy() %>%
+arrange(estimate)
+
+```

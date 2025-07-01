@@ -1,0 +1,380 @@
+---
+title: "Lab 3: Data Collection, Webscraping, and REGEX"
+author: "Nabila Nishat Raisa"
+format: pdf
+editor: visual
+execute:
+  echo: true  
+---
+
+## Package Installation and Prep
+
+```{r}
+#test
+1 + 1
+```
+
+Packages installed - code removed for slow rendering
+Packaged loaded- code removed for slow rendering
+
+# Part 1: Importing Data
+
+### Deliverable 1
+
+```{r}
+library(tm)
+getReaders()
+
+#Word:Word: readDOC()
+#PDF: readPDF()
+#Plaintext: readPlain()
+#HTML: readHTML()
+#Email: readMail()
+
+```
+
+### Deliverable 2
+
+```{r}
+getwd()
+```
+
+```{r}
+?getwd
+?setwd
+```
+
+### Deliverable 3
+
+```{r}
+trump1 <- read.delim("impeach.tab", stringsAsFactors = FALSE)
+```
+
+```{r}
+
+trump2 <- read.delim("C:/Users/auuser/OneDrive - american.edu/ITEC 724/Lab 3/impeach.tab", stringsAsFactors = FALSE)
+```
+
+```{r}
+library(readr)
+trump3 <- read_tsv("impeach.tab")
+
+```
+
+```{r}
+class(trump1)
+class(trump2)
+class(trump3)
+
+```
+
+### Deliverable 4
+
+```{r}
+igfbali <- Corpus(DirSource('txt_data'), readerControl=list(reader=readPlain))
+
+#inspect(igfbali[1])
+
+class(igfbali)
+igfbali
+summary(igfbali[1])
+
+length(igfbali)
+
+#readPlain is used as the reader function when the documents in the directory are in plain text. This functions ensures that text is read as-is, without conversion.We are using this function to read the data as-is. 
+
+#The class of the igfbali object is "SimpleCorpus" and "Corpus"
+
+#Length of the igfbali object is 63, so the number of transcripts is 63.When we run the igfbali, it shows the elements and characteristics, which also shows that there are 63 documents.
+
+```
+
+# Part 2: Regular Expressions (REGEX)
+
+### Deliverable 5
+
+```{r}
+animals <- c("jaguar", "jay", "bat")
+
+```
+
+```{r}
+library(stringr)
+str_detect(animals, "j")
+
+```
+
+```{r}
+str_extract(animals, "j")
+```
+
+```{r}
+str_locate(animals,"j")
+```
+
+```{r}
+help(package = "stringr")
+```
+
+```{r}
+str_detect(animals, "jag")
+
+```
+
+```{r}
+wows <- c("wow", "WoW", "WOW")
+str_detect(wows, "WoW")
+
+```
+
+### Deliverable 6
+
+```{r}
+math <- c("1=2", "14+5", "3-5")
+
+```
+
+```{r}
+str_detect(math, "\\+")
+
+```
+
+```{r}
+strings <- c("cat", "cut", "cue")
+str_extract(strings, "c.")
+
+```
+
+```{r}
+str_extract(strings, "c.t")
+
+```
+
+```{r}
+strings2 <- c("a", "b", "c")
+str_detect(strings2, "[ac]")
+```
+
+```{r}
+numbers <- c("1","2","3","4","5","6","7","8","9")
+str_detect(numbers, "[2-7]")
+```
+
+```{r}
+sentence <- "This is a long sentence with 2 numbers with 1 digits."
+str_locate_all(sentence, "[1-2a-b]")
+
+#Interpretation
+
+#The column headers "start and end" show positions of the matching characters in the string.The pattern [1-2a-b] is looking for numbers 1 or 2 and letters a or b. This outputs shows position of each character matching the pattern in the input string. For example, Position 30 can correspons to the  number "2".
+#the numbers mean the following: 
+#Row 1: Position 9 corresponds to the letter 'a' in "a long sentence..."
+#Row 2: Position 30 corresponds to the number '2' in "...with 2 numbers..."
+#Row 3: Position 35 corresponds to the letter 'b' in "...numbers..."
+#Row 4: Position 45 corresponds to the number '1' in "...with 1 digits."
+
+#took help from chatgpt in finding the examples of each number. 
+```
+
+```{r}
+col <- c("colour", "color", "farver")
+str_detect(col, "colou?r")
+```
+
+```{r}
+sentences <- c("The year was 1776.", "Alexander Hamilton died at 47.")
+str_extract(sentences, "\\d{4}")
+
+```
+
+### Deliverable 7
+
+```{r}
+seasons <- c("The summer is hot this year","The spring is a lovely time","“Winter is my favorite time of the year", "Fall is a time of
+peace")
+```
+
+```{r}
+str_detect(seasons, "^The")
+str_extract(seasons, "^The")
+
+```
+
+```{r}
+str_detect(seasons, "year$")
+```
+
+```{r}
+folder_names <- c("analysis","data-raw","data","R")
+str_detect(folder_names, "^data$")
+
+```
+
+# Part 3: Web Scraping
+
+### Deliverable 8
+
+```{r}
+library(rvest)
+weatherlink <- read_html("https://forecast.weather.gov/MapClick.php?lat=38.95604000000003&lon=-77.11782999999997#.XFozMs9KjUI")
+
+```
+
+```{r}
+forecasthtml <- html_nodes(weatherlink, "detailed-forecast-body b, .forecast-text")
+
+```
+
+```{r}
+forecasttext <- html_text(forecasthtml)
+forecasttext
+
+```
+
+```{r}
+paste(forecasttext, collapse = " ")
+
+```
+
+### Deliverable 9
+
+```{r}
+starwars <- read_html("https://rvest.tidyverse.org/articles/starwars")
+
+```
+
+```{r}
+films <- starwars %>%
+html_elements("section")
+films
+
+```
+
+```{r}
+title <- films %>%
+html_element("h2") %>%
+html_text2()
+title
+```
+
+```{r}
+episode <- films %>%
+html_element("h2") %>%
+html_attr("data-id") %>%
+readr::parse_integer()
+episode
+```
+
+### Deliverable 10
+
+```{r}
+html <- read_html("https://en.wikipedia.org/w/index.php?title=The_Lego_Movie&oldid=998422565")
+html %>%
+html_element(".tracklist") %>%
+html_table()
+
+```
+
+# Part 4: Webscraping and REGEX in Python
+
+### Deliverable 11
+
+```{python}
+import re
+
+```
+
+```{python}
+text = "The rain in Spain"
+if re.search("rain", text):
+  print("Yes, there is at least one match!")
+else:
+  print("No match")
+
+```
+
+```{python}
+text = "The rain in Spain falls mainly in the plain!"
+matches = re.findall("ain", text)
+print(matches)
+```
+
+```{python}
+text = "The rain in Spain"
+split_text = re.split("", text)
+print(split_text)
+
+```
+
+```{python}
+text = "The rain in Spain"
+replaced_text = re.sub("Spain", "France", text)
+print(replaced_text)
+
+```
+
+### Deliverable 12
+
+```{python}
+import requests
+from bs4 import BeautifulSoup
+```
+
+```{python}
+url = "http://quotes.toscrape.com/"
+response = requests.get(url)
+soup = BeautifulSoup(response.text, 'html.parser')
+```
+
+```{python}
+quotes = soup.find_all("span", class_="text")
+for quote in quotes:
+  print(quote.text)
+```
+
+```{python}
+authors = soup.find_all("small", class_="author")
+for author in authors:
+  print(author.text)
+
+```
+
+### Deliverable 13
+
+```{python}
+from bs4 import BeautifulSoup
+import re
+html_doc = """
+<html><head><title>The Dormouse's story</title></head>
+<body>
+<p class="title"><b>The Dormouse's story</b></p>
+<p class="story">Once upon a time there were three little sisters; and their names were
+<a href="http://example.com/elsie" class="sister" id="link1">Elsie</a>,
+<a href="http://example.com/lacie" class="sister" id="link2">Lacie</a> and
+<a href="http://example.com/tillie" class="sister" id="link3">Tillie</a>;
+and they lived at the bottom of a well.</p>
+"""
+soup = BeautifulSoup(html_doc, 'html.parser')
+# Find all 'a' tags with 'class' attribute containing 'sister'
+for tag in soup.find_all('a', class_=re.compile("sister")):
+  print(tag)
+
+```
+
+```{python}
+text = "Contact us at info@example.com or support@example.com"
+emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text)
+print(emails)
+```
+
+### Deliverable 14
+
+```{r}
+reticulate::py_install("selenium")
+
+```
+
+```{python}
+#could run the code but could not render. Was also having problem running the code several times.
+
+```
